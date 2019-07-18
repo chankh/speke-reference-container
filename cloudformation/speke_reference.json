@@ -1,0 +1,1111 @@
+{
+  "Parameters": {
+    "KeyRetentionDays": {
+      "Type": "Number",
+      "Default": 2
+    },
+    "WidevinePSSHBox": {
+      "Type": "String",
+      "Default": ""
+    },
+    "WidevineProtectionHeader": {
+      "Type": "String",
+      "Default": ""
+    },
+    "PlayreadyPSSHBox": {
+      "Type": "String",
+      "Default": ""
+    },
+    "PlayreadyProtectionHeader": {
+      "Type": "String",
+      "Default": ""
+    },
+    "PlayreadyContentKey": {
+      "Type": "String",
+      "Default": ""
+    }
+  },
+  "Resources": {
+    "KeyBucketDB247822": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedHeaders": [
+                "*"
+              ],
+              "AllowedMethods": [
+                "GET"
+              ],
+              "AllowedOrigins": [
+                "*"
+              ],
+              "MaxAge": 3000
+            }
+          ]
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "ExpirationInDays": {
+                "Ref": "KeyRetentionDays"
+              },
+              "Id": "Expire old keys",
+              "Status": "Enabled"
+            }
+          ]
+        }
+      },
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/KeyBucket/Resource"
+      }
+    },
+    "KeyBucketCloudFrontDistributionCFDistributionB6F4CE53": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "DistributionConfig": {
+          "CacheBehaviors": [],
+          "Comment": {
+            "Fn::Join": [
+              "",
+              [
+                "SPEKE CDN for ",
+                {
+                  "Ref": "KeyBucketDB247822"
+                }
+              ]
+            ]
+          },
+          "DefaultCacheBehavior": {
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "ForwardedValues": {
+              "Cookies": {
+                "Forward": "none"
+              },
+              "QueryString": false
+            },
+            "TargetOriginId": "origin1",
+            "ViewerProtocolPolicy": "https-only"
+          },
+          "DefaultRootObject": "index.html",
+          "Enabled": true,
+          "HttpVersion": "http2",
+          "IPV6Enabled": true,
+          "Origins": [
+            {
+              "DomainName": {
+                "Fn::GetAtt": [
+                  "KeyBucketDB247822",
+                  "RegionalDomainName"
+                ]
+              },
+              "Id": "origin1",
+              "S3OriginConfig": {}
+            }
+          ],
+          "PriceClass": "PriceClass_100",
+          "ViewerCertificate": {
+            "CloudFrontDefaultCertificate": true
+          }
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/KeyBucketCloudFrontDistribution/CFDistribution"
+      }
+    },
+    "SpekeVpcDC2C9810": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsHostnames": true,
+        "EnableDnsSupport": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/Resource"
+      }
+    },
+    "SpekeVpcPublicSubnet1SubnetBC47EBBE": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/18",
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PublicSubnet1"
+          },
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet1/Subnet"
+      }
+    },
+    "SpekeVpcPublicSubnet1RouteTableD84112A9": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PublicSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet1/RouteTable"
+      }
+    },
+    "SpekeVpcPublicSubnet1RouteTableAssociation32A80FD3": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SpekeVpcPublicSubnet1RouteTableD84112A9"
+        },
+        "SubnetId": {
+          "Ref": "SpekeVpcPublicSubnet1SubnetBC47EBBE"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet1/RouteTableAssociation"
+      }
+    },
+    "SpekeVpcPublicSubnet1DefaultRouteE15597BA": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SpekeVpcPublicSubnet1RouteTableD84112A9"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "SpekeVpcIGWB6EA37DF"
+        }
+      },
+      "DependsOn": [
+        "SpekeVpcVPCGWCF0AADB3"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet1/DefaultRoute"
+      }
+    },
+    "SpekeVpcPublicSubnet1EIPC282CCFB": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet1/EIP"
+      }
+    },
+    "SpekeVpcPublicSubnet1NATGatewayEBAD3278": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "SpekeVpcPublicSubnet1EIPC282CCFB",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "SpekeVpcPublicSubnet1SubnetBC47EBBE"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PublicSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet1/NATGateway"
+      }
+    },
+    "SpekeVpcPublicSubnet2SubnetF9CC75D5": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "10.0.64.0/18",
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PublicSubnet2"
+          },
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet2/Subnet"
+      }
+    },
+    "SpekeVpcPublicSubnet2RouteTable0CF23598": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PublicSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet2/RouteTable"
+      }
+    },
+    "SpekeVpcPublicSubnet2RouteTableAssociationBDE1E35E": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SpekeVpcPublicSubnet2RouteTable0CF23598"
+        },
+        "SubnetId": {
+          "Ref": "SpekeVpcPublicSubnet2SubnetF9CC75D5"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet2/RouteTableAssociation"
+      }
+    },
+    "SpekeVpcPublicSubnet2DefaultRoute5360B92B": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SpekeVpcPublicSubnet2RouteTable0CF23598"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "SpekeVpcIGWB6EA37DF"
+        }
+      },
+      "DependsOn": [
+        "SpekeVpcVPCGWCF0AADB3"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet2/DefaultRoute"
+      }
+    },
+    "SpekeVpcPublicSubnet2EIP0F1D993F": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet2/EIP"
+      }
+    },
+    "SpekeVpcPublicSubnet2NATGatewayBF250F5D": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "SpekeVpcPublicSubnet2EIP0F1D993F",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "SpekeVpcPublicSubnet2SubnetF9CC75D5"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PublicSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PublicSubnet2/NATGateway"
+      }
+    },
+    "SpekeVpcPrivateSubnet1Subnet3C7EED58": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "10.0.128.0/18",
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PrivateSubnet1"
+          },
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Private"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PrivateSubnet1/Subnet"
+      }
+    },
+    "SpekeVpcPrivateSubnet1RouteTable182C73DD": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PrivateSubnet1"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PrivateSubnet1/RouteTable"
+      }
+    },
+    "SpekeVpcPrivateSubnet1RouteTableAssociation04513D46": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SpekeVpcPrivateSubnet1RouteTable182C73DD"
+        },
+        "SubnetId": {
+          "Ref": "SpekeVpcPrivateSubnet1Subnet3C7EED58"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PrivateSubnet1/RouteTableAssociation"
+      }
+    },
+    "SpekeVpcPrivateSubnet1DefaultRoute99F11F53": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SpekeVpcPrivateSubnet1RouteTable182C73DD"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "SpekeVpcPublicSubnet1NATGatewayEBAD3278"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PrivateSubnet1/DefaultRoute"
+      }
+    },
+    "SpekeVpcPrivateSubnet2SubnetA63D5376": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "CidrBlock": "10.0.192.0/18",
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PrivateSubnet2"
+          },
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Private"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PrivateSubnet2/Subnet"
+      }
+    },
+    "SpekeVpcPrivateSubnet2RouteTableABFB2669": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc/PrivateSubnet2"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PrivateSubnet2/RouteTable"
+      }
+    },
+    "SpekeVpcPrivateSubnet2RouteTableAssociation1AB0EB52": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SpekeVpcPrivateSubnet2RouteTableABFB2669"
+        },
+        "SubnetId": {
+          "Ref": "SpekeVpcPrivateSubnet2SubnetA63D5376"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PrivateSubnet2/RouteTableAssociation"
+      }
+    },
+    "SpekeVpcPrivateSubnet2DefaultRouteCA3E04F8": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "SpekeVpcPrivateSubnet2RouteTableABFB2669"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "SpekeVpcPublicSubnet2NATGatewayBF250F5D"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/PrivateSubnet2/DefaultRoute"
+      }
+    },
+    "SpekeVpcIGWB6EA37DF": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "SpekeStack/SpekeVpc"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/IGW"
+      }
+    },
+    "SpekeVpcVPCGWCF0AADB3": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        },
+        "InternetGatewayId": {
+          "Ref": "SpekeVpcIGWB6EA37DF"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeVpc/VPCGW"
+      }
+    },
+    "SpekeClusterCA096171": {
+      "Type": "AWS::ECS::Cluster",
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeCluster/Resource"
+      }
+    },
+    "SpekeTaskRoleEB88C729": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "ecs-tasks.",
+                      {
+                        "Ref": "AWS::URLSuffix"
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeTaskRole/Resource"
+      }
+    },
+    "SpekeTaskRoleDefaultPolicy1E7D10A0": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "secretsmanager:GetRandomPassword",
+                "secretsmanager:CreateSecrets"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": "secretsmanager:GetSecretValue",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:secretsmanager:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":secret:speke/*"
+                  ]
+                ]
+              }
+            },
+            {
+              "Action": [
+                "s3:PutObject",
+                "s3:PutObjectAcl"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "KeyBucketDB247822",
+                        "Arn"
+                      ]
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "SpekeTaskRoleDefaultPolicy1E7D10A0",
+        "Roles": [
+          {
+            "Ref": "SpekeTaskRoleEB88C729"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeTaskRole/DefaultPolicy/Resource"
+      }
+    },
+    "SpekeServiceLB6B4E3565": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "LoadBalancerAttributes": [],
+        "Scheme": "internet-facing",
+        "SecurityGroups": [
+          {
+            "Fn::GetAtt": [
+              "SpekeServiceLBSecurityGroupCFEA5967",
+              "GroupId"
+            ]
+          }
+        ],
+        "Subnets": [
+          {
+            "Ref": "SpekeVpcPublicSubnet1SubnetBC47EBBE"
+          },
+          {
+            "Ref": "SpekeVpcPublicSubnet2SubnetF9CC75D5"
+          }
+        ],
+        "Type": "application"
+      },
+      "DependsOn": [
+        "SpekeVpcPublicSubnet1DefaultRouteE15597BA",
+        "SpekeVpcPublicSubnet2DefaultRoute5360B92B"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/LB/Resource"
+      }
+    },
+    "SpekeServiceLBSecurityGroupCFEA5967": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Automatically created Security Group for ELB SpekeStackSpekeServiceLB2D8C9739",
+        "SecurityGroupEgress": [],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow from anyone on port 80",
+            "FromPort": 80,
+            "IpProtocol": "tcp",
+            "ToPort": 80
+          }
+        ],
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/LB/SecurityGroup/Resource"
+      }
+    },
+    "SpekeServiceLBSecurityGrouptoSpekeStackSpekeServiceSecurityGroup8F4F466D807455EED2": {
+      "Type": "AWS::EC2::SecurityGroupEgress",
+      "Properties": {
+        "GroupId": {
+          "Fn::GetAtt": [
+            "SpekeServiceLBSecurityGroupCFEA5967",
+            "GroupId"
+          ]
+        },
+        "IpProtocol": "tcp",
+        "Description": "Load balancer to target",
+        "DestinationSecurityGroupId": {
+          "Fn::GetAtt": [
+            "SpekeServiceSecurityGroup9F9B0E2C",
+            "GroupId"
+          ]
+        },
+        "FromPort": 80,
+        "ToPort": 80
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/LB/SecurityGroup/to SpekeStackSpekeServiceSecurityGroup8F4F466D:80"
+      }
+    },
+    "SpekeServiceLBPublicListener2572B034": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "DefaultActions": [
+          {
+            "TargetGroupArn": {
+              "Ref": "SpekeServiceLBPublicListenerECSGroup189AFC73"
+            },
+            "Type": "forward"
+          }
+        ],
+        "LoadBalancerArn": {
+          "Ref": "SpekeServiceLB6B4E3565"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "Certificates": []
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/LB/PublicListener/Resource"
+      }
+    },
+    "SpekeServiceLBPublicListenerECSGroup189AFC73": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": 80,
+        "Protocol": "HTTP",
+        "TargetGroupAttributes": [],
+        "Targets": [],
+        "TargetType": "ip",
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/LB/PublicListener/ECSGroup/Resource"
+      }
+    },
+    "SpekeServiceTaskDef254775D2": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Environment": [
+              {
+                "Name": "WIDEVINE_PSSH_BOX",
+                "Value": {
+                  "Ref": "WidevinePSSHBox"
+                }
+              },
+              {
+                "Name": "WIDEVINE_PROTECTION_HEADER",
+                "Value": {
+                  "Ref": "WidevineProtectionHeader"
+                }
+              },
+              {
+                "Name": "PLAYREADY_CONTENT_KEY",
+                "Value": {
+                  "Ref": "PlayreadyContentKey"
+                }
+              },
+              {
+                "Name": "PLAYREADY_PROTECTION_HEADER",
+                "Value": {
+                  "Ref": "PlayreadyProtectionHeader"
+                }
+              },
+              {
+                "Name": "PLAYREADY_PSSH_BOX",
+                "Value": {
+                  "Ref": "PlayreadyPSSHBox"
+                }
+              },
+              {
+                "Name": "KEYSTORE_BUCKET",
+                "Value": {
+                  "Ref": "KeyBucketDB247822"
+                }
+              },
+              {
+                "Name": "KEYSTORE_URL",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "https://",
+                      {
+                        "Fn::GetAtt": [
+                          "KeyBucketCloudFrontDistributionCFDistributionB6F4CE53",
+                          "DomainName"
+                        ]
+                      }
+                    ]
+                  ]
+                }
+              }
+            ],
+            "Essential": true,
+            "Image": "chankh/speke-key-server:latest",
+            "Links": [],
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "SpekeServiceTaskDefwebLogGroup7B5AF6CA"
+                },
+                "awslogs-stream-prefix": "SpekeService",
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                }
+              }
+            },
+            "MountPoints": [],
+            "Name": "web",
+            "PortMappings": [
+              {
+                "ContainerPort": 80,
+                "Protocol": "tcp"
+              }
+            ],
+            "Ulimits": [],
+            "VolumesFrom": []
+          }
+        ],
+        "Cpu": "1024",
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "SpekeServiceTaskDefExecutionRoleDD2C9370",
+            "Arn"
+          ]
+        },
+        "Family": "SpekeStackSpekeServiceTaskDef6A950C98",
+        "Memory": "2048",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "SpekeTaskRoleEB88C729",
+            "Arn"
+          ]
+        },
+        "Volumes": []
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/TaskDef/Resource"
+      }
+    },
+    "SpekeServiceTaskDefwebLogGroup7B5AF6CA": {
+      "Type": "AWS::Logs::LogGroup",
+      "UpdateReplacePolicy": "Retain",
+      "DeletionPolicy": "Retain",
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/TaskDef/web/LogGroup/Resource"
+      }
+    },
+    "SpekeServiceTaskDefExecutionRoleDD2C9370": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "ecs-tasks.",
+                      {
+                        "Ref": "AWS::URLSuffix"
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/TaskDef/ExecutionRole/Resource"
+      }
+    },
+    "SpekeServiceTaskDefExecutionRoleDefaultPolicy74594032": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "SpekeServiceTaskDefwebLogGroup7B5AF6CA",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "SpekeServiceTaskDefExecutionRoleDefaultPolicy74594032",
+        "Roles": [
+          {
+            "Ref": "SpekeServiceTaskDefExecutionRoleDD2C9370"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/TaskDef/ExecutionRole/DefaultPolicy/Resource"
+      }
+    },
+    "SpekeServiceF84AF1F1": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "TaskDefinition": {
+          "Ref": "SpekeServiceTaskDef254775D2"
+        },
+        "Cluster": {
+          "Ref": "SpekeClusterCA096171"
+        },
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 50
+        },
+        "DesiredCount": 2,
+        "HealthCheckGracePeriodSeconds": 60,
+        "LaunchType": "FARGATE",
+        "LoadBalancers": [
+          {
+            "ContainerName": "web",
+            "ContainerPort": 80,
+            "TargetGroupArn": {
+              "Ref": "SpekeServiceLBPublicListenerECSGroup189AFC73"
+            }
+          }
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "SecurityGroups": [
+              {
+                "Fn::GetAtt": [
+                  "SpekeServiceSecurityGroup9F9B0E2C",
+                  "GroupId"
+                ]
+              }
+            ],
+            "Subnets": [
+              {
+                "Ref": "SpekeVpcPrivateSubnet1Subnet3C7EED58"
+              },
+              {
+                "Ref": "SpekeVpcPrivateSubnet2SubnetA63D5376"
+              }
+            ]
+          }
+        },
+        "ServiceRegistries": []
+      },
+      "DependsOn": [
+        "SpekeServiceLBPublicListenerECSGroup189AFC73",
+        "SpekeServiceLBPublicListener2572B034"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/Service/Service"
+      }
+    },
+    "SpekeServiceSecurityGroup9F9B0E2C": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "SpekeStack/SpekeService/Service/SecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "SecurityGroupIngress": [],
+        "VpcId": {
+          "Ref": "SpekeVpcDC2C9810"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/Service/SecurityGroup/Resource"
+      }
+    },
+    "SpekeServiceSecurityGroupfromSpekeStackSpekeServiceLBSecurityGroupDB322AA480D7A19733": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "IpProtocol": "tcp",
+        "Description": "Load balancer to target",
+        "FromPort": 80,
+        "GroupId": {
+          "Fn::GetAtt": [
+            "SpekeServiceSecurityGroup9F9B0E2C",
+            "GroupId"
+          ]
+        },
+        "SourceSecurityGroupId": {
+          "Fn::GetAtt": [
+            "SpekeServiceLBSecurityGroupCFEA5967",
+            "GroupId"
+          ]
+        },
+        "ToPort": 80
+      },
+      "Metadata": {
+        "aws:cdk:path": "SpekeStack/SpekeService/Service/SecurityGroup/from SpekeStackSpekeServiceLBSecurityGroupDB322AA4:80"
+      }
+    }
+  },
+  "Outputs": {
+    "SPEKEKeyBucket": {
+      "Description": "Bucket name for the SPEKE key cache",
+      "Value": {
+        "Ref": "KeyBucketDB247822"
+      }
+    },
+    "SpekeServiceLoadBalancerDNSE43D3F5A": {
+      "Value": {
+        "Fn::GetAtt": [
+          "SpekeServiceLB6B4E3565",
+          "DNSName"
+        ]
+      }
+    },
+    "SPEKEServerURL": {
+      "Description": "URL for the SPEKE server that is called by MediaPackage",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Fn::GetAtt": [
+                "SpekeServiceLB6B4E3565",
+                "DNSName"
+              ]
+            },
+            "/copyProtection"
+          ]
+        ]
+      }
+    }
+  }
+}
