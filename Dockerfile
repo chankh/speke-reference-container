@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3-slim
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
         libatlas-base-dev gfortran nginx supervisor
