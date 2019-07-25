@@ -13,9 +13,9 @@ import base64
 import os
 
 from flask import Flask, request, make_response
-from app.key_server_common import ServerResponseBuilder
-from app.key_cache import KeyCache
-from app.key_generator import KeyGenerator
+from key_server_common import ServerResponseBuilder
+from key_cache import KeyCache
+from key_generator import KeyGenerator
 
 app = Flask(__name__)
 
